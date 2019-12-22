@@ -1,3 +1,3 @@
 # Crossmatch
-Problem: Crossmatch between MCXC and Pantheon sample to find supernovae in clusters of galaxies.
-The first version is presented here, the code must be modified to find all SNe in clusters. Make the code to work faster using pandas for example.
+Problem: Cross-match between MCXC and Pantheon sample to find supernovae in clusters of galaxies.
+Solve: Build crossmatch function for two catalogs, taking into account angular and redshift separation. Make test to check working of this function.

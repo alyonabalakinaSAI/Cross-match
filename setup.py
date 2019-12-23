@@ -20,7 +20,7 @@ setup(
         'console_scripts': ['match = crossmatch.CrossMatch:main']
     },
     include_package_data=True,
-    install_requires=['numpy', 'astropy', 'astroquery'],
+    install_requires=['numpy', 'astropy', 'astroquery', 'scipy'],
     classifiers=[
         'Topic :: Astrophysics, Stellar evolution',
         'Programming Language :: Python :: 3.7',

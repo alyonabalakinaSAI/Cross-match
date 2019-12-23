@@ -1,2 +1,3 @@
 include runner README.md
-recursive-include crossmatch/testcatalog *
+recursive-include crossmatch/testcatalog *.csv
+recursive-include crossmatch/Pantheon.FITRES

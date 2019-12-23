@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 
 from setuptools import find_packages, setup
-import CrossMatch
+import crossmatch
 
 description = ""
 "Program for cross-match beteewn two catalogs: Pantheon sample of supernovae Ia and Meta-Catalog of X-ray Detected Cluster of galaxies. "
 "Determinination SNe Ia in clusters of galaxies are needed for cosmological analysis and building Hubble diagram"
 
 setup(
-    name='crossmatch',
-    version=CrossMatch.__version__,
+    name=crossmatch.__name__,
+    version=crossmatch.__version__,
     url='https://github.com/alyonabalakinaSAI/Cross-match',
     author='Elena Balakina',
     author_email='balakina.ea15@physics.msu.ru',
@@ -17,7 +17,7 @@ setup(
     packages=find_packages(),
     test_suite='test',
     entry_points={
-        'console_scripts': ['crossmatch = crossmatch.CrossMatch:main']
+        'console_scripts': ['match = crossmatch.CrossMatch:main']
     },
     include_package_data=True,
     install_requires=['numpy', 'astropy', 'astroquery'],

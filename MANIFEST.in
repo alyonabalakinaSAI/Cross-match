@@ -1,3 +1,3 @@
 include runner README.md
-recursive-include crossmatch/testcatalog*.csv
-recursive-include crossmatch/*.FITRES
+recursive-include crossmatch/testcatalog *
+include crossmatch *.FITRES

@@ -55,13 +55,19 @@ def crossmatch(catalog1, catalog2, colRA1='RA', colDec1='DEC', colZ1='z',
     return (joined_catalog)
 
 
-sne_table = ascii.read('Pantheon.FITRES')
-sne_table = sne_table[sne_table['RA'] != 0]
 
-vizier = Vizier(row_limit=2000)
-mcxc_table = vizier.get_catalogs('J/A+A/534/A109/mcxc')[0]
+def main():
+    sne_table = ascii.read('Pantheon.FITRES')
+    sne_table = sne_table[sne_table['RA'] != 0]
 
-table = crossmatch(catalog1=sne_table, catalog2=mcxc_table, colRA1='RA', colDec1='DECL', colZ1='zCMB', colRA2='RAJ2000', colDec2='DEJ2000', colZ2='z', max_sep=20, use_z=True)
-final_table = table['CID', 'MCXC', 'RAJ2000', 'RA', 'DEJ2000', 'DECL', 'DELTA_Z']
-final_table['CID'].name, final_table['MCXC'].name = 'SN name', 'Cluster'
-final_table.write('CrossTable', format='ascii')
+    vizier = Vizier(row_limit=2000)
+    mcxc_table = vizier.get_catalogs('J/A+A/534/A109/mcxc')[0]
+
+    table = crossmatch(catalog1=sne_table, catalog2=mcxc_table, colRA1='RA', colDec1='DECL', colZ1='zCMB', colRA2='RAJ2000', colDec2='DEJ2000', colZ2='z', max_sep=20, use_z=True)
+    final_table = table['CID', 'MCXC', 'RAJ2000', 'RA', 'DEJ2000', 'DECL', 'DELTA_Z']
+    final_table['CID'].name, final_table['MCXC'].name = 'SN name', 'Cluster'
+    final_table.write('CrossTable', format='ascii')
+
+
+if __name__ == '__main__':
+    main()

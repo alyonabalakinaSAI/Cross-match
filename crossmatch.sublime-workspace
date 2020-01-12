@@ -1,0 +1,413 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"def",
+				"default"
+			],
+			[
+				"DE",
+				"DEJ2000"
+			],
+			[
+				"P",
+				"Pantheon"
+			],
+			[
+				"name",
+				"name_sne"
+			],
+			[
+				"cat",
+				"catalog1"
+			],
+			[
+				"wo",
+				"work_catalog2\tstatement"
+			],
+			[
+				"fin",
+				"fin_table"
+			],
+			[
+				"mc",
+				"mcxc_table\tstatement"
+			],
+			[
+				"arc",
+				"arcmin"
+			],
+			[
+				"max",
+				"maxdist"
+			],
+			[
+				"mar",
+				"marker"
+			],
+			[
+				"x",
+				"xlim"
+			],
+			[
+				"ls",
+				"linestyle"
+			],
+			[
+				"bu",
+				"burning"
+			],
+			[
+				"line",
+				"linewidth"
+			],
+			[
+				"br",
+				"branch"
+			],
+			[
+				"D",
+				"DEJ2000"
+			],
+			[
+				"RA",
+				"RAJ2000"
+			],
+			[
+				"b",
+				"burning"
+			],
+			[
+				"new",
+				"new_farr"
+			],
+			[
+				"Da",
+				"DArr"
+			],
+			[
+				"fn",
+				"fncol"
+			],
+			[
+				"DA",
+				"DArr"
+			],
+			[
+				"co",
+				"color"
+			],
+			[
+				"li",
+				"linewidth"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"contents": "#!/usr/bin/env python3\n\nimport numpy\nimport astropy.units as u\nimport astropy.coordinates as acoords\nfrom astropy.io import ascii\nfrom astroquery.vizier import Vizier\nimport astropy.table as astable\nimport os\nfrom argparse import ArgumentParser\n\n\ndef crossmatch(catalog1, catalog2, colRA1='RA', colDec1='DEC', colZ1='z',\n               colRA2='RA', colDec2='DEC', colZ2='z', max_sep=10, use_z=False):\n    \"\"\"\n    NAME:\n         Crossmatch\n    PURPOSE:\n         cross-match two catalogs (including proper motion in catalog2 if epochs are different)\n    INPUT:\n         catalog1 - First catalog\n         name1 - objects name in catalog1\n         colRA1= ('RA') name of the tag in catalog1 with the right ascension in degree in catalog1 (assumed to be ICRS)\n         colDec1= ('DEC') name of the tag in catalog1 with the declination in degree in catalog1 (assumed to be ICRS)\n         colZ1= ('z') name of the tag in catalog1 with the value of redshift\n\n         catalog2 - Second catalog\n         name2 - objects name in catalog2\n         colRA2= ('RA') name of the tag in catalog2 with the right ascension in degree in catalog2 (assumed to be ICRS)\n         colDec2= ('DEC') name of the tag in catalog2 with the declination in degree in catalog2 (assumed to be ICRS)\n         colZ2= ('z') name of the tag in catalog2 with the value of redshift\n\n         max_sep = (10) maximum value of angular separation in arcmin\n    OUTPUT:\n         (joined catalog of matching catalogs, additional column with redshift separation)\n\n    \"\"\"\n    work_catalog1 = acoords.SkyCoord(ra=catalog1[colRA1], dec=catalog1[colDec1],\n                                     unit=(u.degree, u.degree))\n    work_catalog2 = acoords.SkyCoord(ra=catalog2[colRA2], dec=catalog2[colDec2],\n                                     unit=(u.hourangle, u.degree))\n\n    idx, d2d, d3d = work_catalog1.match_to_catalog_sky(work_catalog2)\n    catalog2_sort = catalog2[idx]\n\n    joined_catalog = astable.hstack([catalog1, catalog2_sort])\n    joined_catalog = joined_catalog[d2d < (max_sep * u.arcmin)]\n\n    if use_z is True:\n        delta_z = numpy.abs(joined_catalog[colZ1] - joined_catalog[colZ2])\n        delta_z.name = 'DELTA_Z'\n        joined_catalog = astable.hstack([joined_catalog, delta_z])\n        joined_catalog = joined_catalog[joined_catalog['DELTA_Z'] < 0.015]\n    else:\n        delta_z = 0\n\n    return (joined_catalog)\n\n\ndef parser():\n    parser = ArgumentParser()\n    parser.add_argument(\n        '--catalog1', default='Pantheon', type=str,\n        help='Pantheon sample of supernovae')\n    parser.add_argument(\n        '--catalog2', default='J/A+A/534/A109/mcxc', type=str,\n        help='Vizier name of the second catalog to cross-match with Pantheon sample, default is MCXC')\n    parser.add_argument(\n        '--RA2', default='RAJ2000', metavar='hourangle', type=float,\n        help='name of R.A. column in the second catalog, default is MCXC')\n    parser.add_argument(\n        '--DEC2', default='DEJ2000', metavar='degree', type=float,\n        help='name of Dec. column in the second catalog')\n\n    return parser\n\n\ndef main():\n\n    path = os.path.dirname(os.path.abspath(__file__))\n\n    sne_table = ascii.read(os.path.join(path, 'Pantheon.FITRES'))\n    sne_table = sne_table[sne_table['RA'] != 0]\n\n    vizier = Vizier(row_limit=2000)\n    mcxc_table = vizier.get_catalogs('J/A+A/534/A109/mcxc')[0]\n\n    table = crossmatch(catalog1=sne_table, catalog2=mcxc_table, colRA1='RA', colDec1='DECL', colZ1='zCMB', colRA2='RAJ2000', colDec2='DEJ2000', colZ2='z', max_sep=20, use_z=True)\n    final_table = table['CID', 'MCXC', 'RAJ2000', 'RA', 'DEJ2000', 'DECL', 'DELTA_Z']\n    final_table['CID'].name, final_table['MCXC'].name = 'SN name', 'Cluster'\n    print(final_table)\n    ascii.write(final_table, os.path.join(path, 'CrossTable'), format='csv', overwrite=True)\n\n\nif __name__ == '__main__':\n    main()\n",
+			"file": "crossmatch/CrossMatch.py",
+			"file_size": 3804,
+			"file_write_time": 132221402929157861,
+			"settings":
+			{
+				"buffer_size": 3865,
+				"line_ending": "Windows"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"quick",
+				"Git: Quick Commit (and push)"
+			],
+			[
+				"git ini",
+				"Git: Init"
+			],
+			[
+				"wrap",
+				"Word Wrap: Toggle"
+			],
+			[
+				"act",
+				"ayu: Activate theme"
+			],
+			[
+				"insta",
+				"Package Control: Install Package"
+			],
+			[
+				"",
+				"Anaconda: Goto Python object"
+			],
+			[
+				"install pa",
+				"Package Control: Install Package"
+			],
+			[
+				"theme",
+				"UI: Select Color Scheme"
+			],
+			[
+				"ins",
+				"Package Control: Install Package"
+			]
+		],
+		"width": 0.0
+	},
+	"console":
+	{
+		"height": 0.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/Users/Alyona 1/Documents/SNeIa/Crossmatch",
+		"/Users/Alyona 1/Documents/SNeIa/Crossmatch/build",
+		"/Users/Alyona 1/Documents/SNeIa/Crossmatch/crossmatch"
+	],
+	"file_history":
+	[
+		"/Users/Alyona 1/Documents/SNeIa/Crossmatch/crossmatch.sublime-project",
+		"/Users/Alyona 1/Documents/SNeIa/Crossmatch/.gitignore",
+		"/Users/Alyona 1/Documents/SNeIa/Crossmatch/README.md",
+		"/Users/Alyona 1/Documents/SNeIa/Crossmatch/MANIFEST.in",
+		"/Users/Alyona 1/Documents/SNeIa/Crossmatch/crossmatch/CrossMatch.py",
+		"/Users/Alyona 1/Documents/SNeIa/Crossmatch/test/test.py",
+		"/Users/Alyona 1/Documents/SNeIa/Crossmatch/test/testcatalog/cat2.csv",
+		"/Users/Alyona 1/Documents/SNeIa/Crossmatch/test/testcatalog/cat1.csv",
+		"/Users/Alyona 1/Documents/SNeIa/Crossmatch/test/testcatalog/cat3.csv",
+		"/Users/Alyona 1/Documents/Prak/6.py",
+		"/Users/Alyona 1/Documents/Prak/5.py",
+		"/Users/Alyona 1/Documents/SNeIa/Match/setup.py",
+		"/Users/Alyona 1/Documents/SNeIa/Match/Match.py",
+		"/Users/Alyona 1/Documents/SNeIa/Match/init.py",
+		"/Users/Alyona 1/Library/Application Support/Sublime Text 3/Packages/Anaconda/Anaconda.sublime-settings",
+		"/Users/Alyona 1/Documents/SNe Ia/Match/Match.py",
+		"/Users/Alyona 1/Documents/Python/SEMINAR/Seminar9.txt",
+		"/Users/Alyona 1/Desktop/init.py",
+		"/Users/Alyona 1/Documents/Python/SEMINAR/Seminar8юече",
+		"/Users/Alyona 1/Documents/Prak/4N.py",
+		"/Users/Alyona 1/Documents/Prak/Models_ALL/M10Z0.001/LOGS/profiles.index",
+		"/Users/Alyona 1/Documents/Prak/Models_ALL/M10Z0.001/profile_columns.list",
+		"/Users/Alyona 1/Documents/Prak/Models_ALL/M10Z0.001/history_columns.list",
+		"/Users/Alyona 1/Documents/Python/SEMINAR/Seminar7.txt",
+		"/Users/Alyona 1/Documents/Prak/M9-50/M9.0Z0.02/LOGS/profiles.index",
+		"/Users/Alyona 1/Desktop/OTJ0337.0001.fits",
+		"/Users/Alyona 1/Documents/Prak/3.py",
+		"/Users/Alyona 1/Documents/Prak/4.py",
+		"/Users/Alyona 1/Documents/Prak/2.py",
+		"/Users/Alyona 1/Documents/SN2017gpn/offsets/Plot.py",
+		"/Users/Alyona 1/Documents/SN2017gpn/offsets/MAIN_cand.csv",
+		"/Users/Alyona 1/Documents/C++/homework3/homework3/Darray.hpp",
+		"/Users/Alyona 1/Documents/C++/homework3/homework3/main.cpp",
+		"/Users/Alyona 1/Documents/C++/homework3/homework3/Darray.cpp",
+		"/Users/Alyona 1/Documents/C++/homework4/MAIN.cpp",
+		"/Users/Alyona 1/Documents/C++/homework4/FUNCTION.hpp",
+		"/Users/Alyona 1/Documents/C++/homework4/FUNCTION.cpp",
+		"/Users/Alyona 1/Documents/Python/SEMINAR/Senimar6.txt",
+		"/Users/Alyona 1/Documents/Prak/Models/M2.5Z0.02/LOGS/history.data",
+		"/Users/Alyona 1/Documents/Python/SEMINAR/seminar5.txt",
+		"/Users/Alyona 1/Documents/SN2017gpn/Modeling/LCIIb_oneframe.py",
+		"/Users/Alyona 1/Desktop/abstract49/tekhov.tex",
+		"/Users/Alyona 1/Desktop/VPH.py",
+		"/Users/Alyona 1/Documents/Python/SEMINAR/seminar4.txt",
+		"/Users/Alyona 1/Documents/Prak/Problem_1.py",
+		"/Users/Alyona 1/Desktop/Prak/Problem_1.py",
+		"/Users/Alyona 1/Desktop/Prak/Problem_1_2.py",
+		"/Users/Alyona 1/Desktop/Prak/Problem_1_2",
+		"/Users/Alyona 1/Desktop/Prak/1.py",
+		"/Users/Alyona 1/Documents/SN2017gpn/offsets/rel_offset.py",
+		"/Users/Alyona/Downloads/sky-45-K-OPEN.fts",
+		"/Users/Alyona/Downloads/sky-85-H-OPEN.fts",
+		"/Users/Alyona/Downloads/sky-20-J-OPEN.fts",
+		"/Users/Alyona/Downloads/sky-20-K-OPEN.fts",
+		"/Users/Alyona/Desktop/sky/medians.py",
+		"/Users/Alyona/Desktop/sky/py.py",
+		"/Users/Alyona/Desktop/sky/mypi.py",
+		"/Users/Alyona/Desktop/FF/py2.py",
+		"/Users/Alyona/Desktop/FF/py1.py",
+		"/Users/Alyona/Desktop/FF/py.py"
+	],
+	"find":
+	{
+		"height": 28.0
+	},
+	"find_in_files":
+	{
+		"height": 106.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "crossmatch/CrossMatch.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3865,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2906,
+								2906
+							]
+						],
+						"settings":
+						{
+							"git_gutter_is_enabled": true,
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 764.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 28.0
+	},
+	"input":
+	{
+		"height": 50.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"output.git":
+	{
+		"height": 126.0
+	},
+	"pinned_build_system": "",
+	"project": "crossmatch.sublime-project",
+	"replace":
+	{
+		"height": 52.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 150.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

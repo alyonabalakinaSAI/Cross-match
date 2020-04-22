@@ -90,7 +90,7 @@ def main():
     final_table = table['CID', 'MCXC', 'RAJ2000', 'RA', 'DEJ2000', 'DECL', 'DELTA_Z']
     final_table['CID'].name, final_table['MCXC'].name = 'SN name', 'Cluster'
     print(final_table)
-    ascii.write(final_table, os.path.join(path, 'CrossTable'), format='csv', overwrite=True)
+    ascii.write(final_table, os.path.join(path, 'CrossTable.csv'), format='csv', overwrite=True)
 
 
 if __name__ == '__main__':

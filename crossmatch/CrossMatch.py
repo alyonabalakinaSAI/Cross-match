@@ -42,20 +42,35 @@ def crossmatch(catalog1, catalog2, colRA1='RA', colDec1='DEC', colZ1='z',
                                      unit=(u.hourangle, u.degree))
 
     idx, d2d, d3d = work_catalog1.match_to_catalog_sky(work_catalog2)
+    d2d = Column(d2d, name='Angle_Sep')
     catalog2_sort = catalog2[idx]
 
     joined_catalog = astable.hstack([catalog1, catalog2_sort])
-    joined_catalog = joined_catalog[d2d < (max_sep * u.arcmin)]
+    max_separ_all, d3d_all = [], []
+    for z in joined_catalog['zCMB']:  # R200 + 5 sigma = 2.92 Mpc, H0=69.8
+        max_separ = (2.92 * 69.8 * 206265) / (z * 299792.458 * math.pow((z + 1),2))
+        max_separ_all.append(max_separ)
+    max_separ_col = Column(max_separ_all * u.arcsec, unit=u.deg, name='Max_Sep')
+    joined_catalog = astable.hstack([joined_catalog, max_separ_col, d2d])
+    diff = joined_catalog[d2d < max_separ_col]
 
     if use_z is True:
-        delta_z = numpy.abs(joined_catalog[colZ1] - joined_catalog[colZ2])
+        delta_z = numpy.abs(diff[colZ1] - diff[colZ2])
         delta_z.name = 'DELTA_Z'
-        joined_catalog = astable.hstack([joined_catalog, delta_z])
-        joined_catalog = joined_catalog[joined_catalog['DELTA_Z'] < 0.015]
+        diff = astable.hstack([diff, delta_z])
+        velocity = delta_z * 299792.458
+        velocity.name = 'Vel'
+        diff = astable.hstack([diff, velocity])
+        diff = diff[diff['DELTA_Z'] < 0.02]
     else:
         delta_z = 0
-
-    return (joined_catalog)
+    i = 0
+    for z in diff['zCMB']:
+        d3d = (z * 299792.458 / 69.8) * (diff['Angle_Sep'][i] / 57.296)
+        d3d_all.append(d3d)
+        i = i + 1
+    d3d_col = Column(d3d_all * u.Mpc, unit=u.Mpc, name='Mpc_Sep')
+    diff = astable.hstack([diff, d3d_col])
 
 
 def parser():
@@ -89,7 +104,7 @@ def main():
                        colRA2='RAJ2000', colDec2='DEJ2000', colZ2='z', max_sep=sep, use_z=z)
     final_table = table['CID', 'MCXC', 'RAJ2000', 'RA', 'DEJ2000', 'DECL', 'DELTA_Z']
     final_table['CID'].name, final_table['MCXC'].name = 'SN name', 'Cluster'
-    print(final_table)
+    
     ascii.write(final_table, os.path.join(path, 'CrossTable.csv'), format='csv', overwrite=True)
 
 
